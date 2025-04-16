@@ -9,24 +9,29 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code (optional but safe)
+        uses: actions/checkout@v3
+
       - name: Extract Jira Issue Key
         id: extract
         run: |
-          echo "JIRA_KEY=$(echo '${{ github.event.pull_request.title }}' | grep -o '[A-Z]\+-[0-9]\+')" >> $GITHUB_OUTPUT
+          echo "Extracting Jira key from PR title: ${{ github.event.pull_request.title }}"
+          key=$(echo "${{ github.event.pull_request.title }}" | grep -oE '[A-Z]+-[0-9]+')
+          echo "JIRA_KEY=$key" >> $GITHUB_OUTPUT
 
       - name: Login to Jira
         uses: atlassian/gajira-login@v3
-        env:
-          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_EMAIL }}
-          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        with:
+          site: ${{ secrets.JIRA_BASE_URL }}
+          email: ${{ secrets.JIRA_EMAIL }}
+          apiToken: ${{ secrets.JIRA_API_TOKEN }}
 
       - name: Transition Jira issue to Done
         uses: atlassian/gajira-transition@v3
         with:
           issue: ${{ steps.extract.outputs.JIRA_KEY }}
           transition: Done
-          
+
       - name: Notify Slack
         uses: slackapi/slack-github-action@v1.24.0
         with:
