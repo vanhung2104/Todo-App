@@ -1,29 +1,31 @@
-name: Update Jira Issue on PR Merge
+name: CI/CD with GitHub, Jira and Slack
 
 on:
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
+  build-and-test:
+    if: github.event.pull_request.merged != true
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: echo Hello world
+
   update-jira:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Extract Jira Issue Key
         id: extract
         run: |
-          echo "Extracting Jira key from PR title: ${{ github.event.pull_request.title }}"
-          key=$(echo "${{ github.event.pull_request.title }}" | grep -oE '[A-Z]+-[0-9]+')
-          echo "JIRA_KEY=$key" >> $GITHUB_OUTPUT
+          echo "JIRA_KEY=$(echo '${{ github.event.pull_request.title }}' | grep -o '[A-Z]\+-[0-9]\+')" >> $GITHUB_OUTPUT
 
       - name: Login to Jira
         uses: atlassian/gajira-login@v3
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
       - name: Transition Jira issue to Done
@@ -31,7 +33,7 @@ jobs:
         with:
           issue: ${{ steps.extract.outputs.JIRA_KEY }}
           transition: Done
-
+          
       - name: Notify Slack
         uses: slackapi/slack-github-action@v1.24.0
         with:
