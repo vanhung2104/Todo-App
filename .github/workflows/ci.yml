@@ -9,7 +9,7 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code (optional but safe)
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Extract Jira Issue Key
@@ -21,10 +21,10 @@ jobs:
 
       - name: Login to Jira
         uses: atlassian/gajira-login@v3
-        with:
-          site: ${{ secrets.JIRA_BASE_URL }}
-          email: ${{ secrets.JIRA_EMAIL }}
-          apiToken: ${{ secrets.JIRA_API_TOKEN }}
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
       - name: Transition Jira issue to Done
         uses: atlassian/gajira-transition@v3
